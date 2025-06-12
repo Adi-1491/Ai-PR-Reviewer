@@ -14,7 +14,7 @@ const reviewPr = async (req,res) => {
                 {
                   role: 'user',
                   content: `You are a code reviewer bot. Given a code snippet, return 
-                  exactly 3 improvement suggestions as a JSON array. Each suggestion should have 
+                  improvement suggestions as a JSON array. Each suggestion should have 
                   the fields: "comment" (string) and "code" (optional code snippet). Respond ONLY
                   with the raw JSON. Do not include explanation or formatting.\n\nReview this code:\n\n${code}`,
                 },
