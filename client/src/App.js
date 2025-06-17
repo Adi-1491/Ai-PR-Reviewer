@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Highlight from "react-highlight";
+import 'highlight.js/styles/github.css';
 
 const App = () => {
   const [code, setCode] = useState("");
@@ -81,8 +83,8 @@ const App = () => {
   };
 
   const handleClearHistory = () => {
-    setShowHistory("");
-    setHistory("");
+    setShowHistory(false);
+    setHistory([]);
     localStorage.removeItem('aiReviewHistory');
   }
 
@@ -145,6 +147,28 @@ const App = () => {
                       ))}
                     </ul>
                   )}
+                  <button
+                  onClick={() => {
+                    setCode(item.code);
+                    setSuggestions(item.suggestions);
+                    localStorage.setItem("aiInputCode",item.code);
+                    localStorage.setItem("aiSuggestions", JSON.stringify(item.suggestions));
+                    setShowHistory(false);
+                  }}
+                    className="text-blue-600 hover:underline text-sm font-medium mt-2"
+                  >
+                    Reopen Review
+                  </button>
+                  <button
+                  onClick={()=>{
+                    const updated = history.filter((_,index) => index !== i);
+                    setHistory(updated);
+                    localStorage.setItem("aiReviewHistory",JSON.stringify(updated));
+                  }}
+                  className="text-red-500 hover:underline text-sm font-medium mt-2 ml-4"
+                  >
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>
@@ -213,7 +237,7 @@ const App = () => {
                   {s.code && (
                     <>
                       <pre className="mt-2 bg-gray-100 p-3 rounded-lg text-sm overflow-x-auto">
-                        <code className="text-gray-800">{s.code}</code>
+                        <Highlight className="">{s.code}</Highlight>
                       </pre>
                       <button
                         onClick={() => handleCopy(s.code, i)}

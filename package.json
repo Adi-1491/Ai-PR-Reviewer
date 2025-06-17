@@ -3,5 +3,9 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "react-highlight": "^0.15.0"
   }
 }
