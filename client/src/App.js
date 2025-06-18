@@ -11,6 +11,7 @@ const App = () => {
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const MAX_LENGTH = 1000;
   const charCount = code.length;
@@ -27,10 +28,16 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem("aiReviewHistory");
-    if (stored) {
-      setHistory(JSON.parse(stored));
-    }
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/api/history");
+        setHistory(res.data);
+      } catch (err) {
+        console.error("Failed to fetch history:", err);
+      }
+    };
+  
+    fetchHistory();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -76,30 +83,40 @@ const App = () => {
     setCode("");
     setSuggestions([]);
     setError("");
-    
     localStorage.removeItem("aiSuggestions");
     localStorage.removeItem("aiInputcode");
-    
   };
 
-  const handleClearHistory = () => {
-    setShowHistory(false);
-    setHistory([]);
-    localStorage.removeItem('aiReviewHistory');
-  }
-
-  const saveReviewHistory = (code, suggestions) => {
-    const newReview = {
-      code,
-      suggestions,
-      timestamp: new Date().toISOString(),
-    };
-
-    const existing = JSON.parse(localStorage.getItem("aiReviewHistory")) || [];
-    const updated = [newReview, ...existing];
-    localStorage.setItem("aiReviewHistory", JSON.stringify(updated));
-    setHistory(updated);
+  const handleClearHistory = async () => {
+    const confirm = window.confirm("Are you sure you ant ot delete all history?")
+    if (!confirm) return;
+    try {
+      await axios.delete("http://localhost:5001/api/history"); // delete all
+      setHistory([]);
+      setSearchTerm("");
+    } catch (error) {
+      console.error("Failed to delete all history:", error);
+    }
   };
+  
+
+  const saveReviewHistory = async (code, suggestions) => {
+    try {
+      const res = await axios.post("http://localhost:5001/api/history", {
+        code,
+        suggestions,
+      });
+  
+      // Add new history to state (top of the list)
+      setHistory((prev) => [res.data, ...prev]);
+    } catch (err) {
+      console.error("Failed to save history:", err);
+    }
+  };  
+
+  const filteredHistory = history.filter(item =>
+    item.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center py-10 px-4">
@@ -126,51 +143,86 @@ const App = () => {
         </div>
 
         {/* HISTORY LIST */}
-        {showHistory && history.length > 0 && (
-          <div className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold text-gray-700 border-b pb-2">Past Reviews</h2>
-            <ul className="space-y-4 max-h-96 overflow-y-auto">
-              {history.map((item, i) => (
-                <li key={i} className="border border-gray-200 p-4 rounded-lg shadow-sm bg-white">
-                  <p className="text-sm text-gray-500">🕓 {new Date(item.timestamp).toLocaleString()}</p>
+        {showHistory && (
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h2 className="text-xl font-semibold text-gray-700">Past Reviews</h2>
+              <input
+                type="text"
+                placeholder="Search code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-64"
+              />
+            </div>
 
-                  <pre className="bg-gray-100 p-3 rounded text-xs mt-2 overflow-x-auto">
-                    <code>{item.code}</code>
-                  </pre>
+            <ul className="space-y-4 max-h-96 overflow-y-auto mt-4">
+              {filteredHistory.length === 0 ? (
+                <p className="text-gray-500 text-sm">No matching history found.</p>
+              ) : (
+                filteredHistory.map((item, i) => (
+                  <li key={i} className="border border-gray-200 p-4 rounded-lg shadow-sm bg-white">
+                    <p className="text-sm text-gray-500">🕓 {new Date(item.timestamp).toLocaleString()}</p>
 
-                  {item.suggestions.length > 0 && (
-                    <ul className="mt-2 space-y-2">
-                      {item.suggestions.map((s, j) => (
-                        <li key={j} className="text-sm text-gray-800">
-                          💡 {s.comment}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <button
-                  onClick={() => {
-                    setCode(item.code);
-                    setSuggestions(item.suggestions);
-                    localStorage.setItem("aiInputCode",item.code);
-                    localStorage.setItem("aiSuggestions", JSON.stringify(item.suggestions));
-                    setShowHistory(false);
-                  }}
-                    className="text-blue-600 hover:underline text-sm font-medium mt-2"
-                  >
-                    Reopen Review
-                  </button>
-                  <button
-                  onClick={()=>{
-                    const updated = history.filter((_,index) => index !== i);
-                    setHistory(updated);
-                    localStorage.setItem("aiReviewHistory",JSON.stringify(updated));
-                  }}
-                  className="text-red-500 hover:underline text-sm font-medium mt-2 ml-4"
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
+                    <pre className="bg-gray-100 p-3 rounded text-xs mt-2 overflow-x-auto">
+                      <code>{item.code}</code>
+                    </pre>
+
+                    {item.suggestions.length > 0 && (
+                      <ul className="mt-2 space-y-2">
+                        {item.suggestions.map((s, j) => (
+                          <li key={j} className="text-sm text-gray-800">
+                            💡 {s.comment}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setCode(item.code);
+                        setSuggestions(item.suggestions);
+                        localStorage.setItem("aiInputcode", item.code); // ✅ consistent key
+                        localStorage.setItem("aiSuggestions", JSON.stringify(item.suggestions));
+                        setShowHistory(false);
+                        window.scrollTo({ top: 0, behavior: "smooth" }); // ✅ smooth scroll
+                      }}
+                      className="text-blue-600 hover:underline text-sm font-medium mt-2"
+                    >
+                      Reopen Review
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                        await axios.delete(`http://localhost:5001/api/history/${item._id}`);
+                        const updated = history.filter((_, index) => index !== i);
+                        setHistory(updated); 
+                        }
+                        catch(error)
+                        {
+                          console.error("Failed to delete from backend:", error);
+                        }                       
+                      }}
+                      className="text-red-500 hover:underline text-sm font-medium mt-2 ml-4"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCode(item.code);
+                        setSuggestions(item.suggestions);
+                        localStorage.setItem("aiInputcode", item.code);
+                        localStorage.setItem("aiSuggestions", JSON.stringify(item.suggestions));
+                        setShowHistory(false);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-green-600 hover:underline text-sm font-medium mt-2 ml-4"
+                    >
+                      Edit & Re-review
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         )}
@@ -186,7 +238,7 @@ const App = () => {
             value={code}
             onChange={(e) => {
               setCode(e.target.value);
-              localStorage.setItem("aiInputcode", e.target.value);
+              localStorage.setItem("aiInputcode", e.target.value); // ✅ consistent key
             }}
           />
           <div className="text-right text-sm text-gray-500">
