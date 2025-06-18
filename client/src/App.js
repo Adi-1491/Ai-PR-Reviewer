@@ -135,8 +135,11 @@ const App = () => {
             {showHistory ? "Hide History" : "View History"}
           </button>
           <button
+           disabled={history.length === 0}
+           className={`text-red-500 hover:underline text-sm font-medium ${
+             history.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+           }`}
             onClick={handleClearHistory}
-            className="text-red-500 hover:underline text-sm font-medium"
           >
             Clear History
           </button>
