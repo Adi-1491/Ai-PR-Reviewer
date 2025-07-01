@@ -5,8 +5,11 @@
     "tailwindcss": "^4.1.8"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "highlight.js": "^11.11.1",
     "mongoose": "^8.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-highlight": "^0.15.0"
   }
 }
