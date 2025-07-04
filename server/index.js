@@ -1,4 +1,5 @@
 require('dotenv').config(); // reads your dotenv file and make sure content of it is available throught the code
+require('./auth/github');
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -6,12 +7,27 @@ const app = express();
 const reviewRoute = require('./routes/reviewRoute');
 const historyRoute = require('./routes/historyRoute');
 const mongoose = require('mongoose');
+const session = require("express-session");
+const passport = require("passport");
+const authRoutes = require("./routes/auth");
 
 app.use(cors()); //allow fe and be to talk
 app.use(express.json()); // helps in reading json
 
 app.use('/api',reviewRoute)
 app.use('/api',historyRoute)
+app.use('/auth',authRoutes);
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave:false,
+        saveUninitialized:true,
+    })
+);
+
+app.use(passport.initialize()); //tells to use passport
+app.use(passport.session()); // tells passport to use sessions
 
 app.listen(process.env.PORT, (error) => {
     if(!error)
