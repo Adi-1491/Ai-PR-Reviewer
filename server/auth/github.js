@@ -18,8 +18,15 @@ passport.use(
             callbackURL: "http://localhost:5001/auth/github/callback",
             
         },
-        (accessToken, refreshToken, profile, done) => {
-            return done(null, profile);
+        async (accessToken, refreshToken, profile, done) => {
+            //storing access token in user session
+            const user = {
+                id: profile.id,
+                username: profile.username,
+                avatar: profile.photos[0].value,
+                accessToken,
+            };
+            return done(null, user);
         }
     )
     

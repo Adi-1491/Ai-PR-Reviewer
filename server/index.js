@@ -10,17 +10,18 @@ const mongoose = require('mongoose');
 const session = require("express-session");
 const passport = require("passport");
 const authRoutes = require("./routes/auth");
+const githubRoutes = require("./routes/github")
 
-// ✅ 1. CORS
+//  1. CORS
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
 }));
 
-// ✅ 2. JSON body parser
+//  2. JSON body parser
 app.use(express.json());
 
-// ✅ 3. Session middleware
+//  3. Session middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -34,7 +35,7 @@ app.use(
   })
 );
 
-// ✅ 4. Passport
+//  4. Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -45,11 +46,22 @@ app.get("/user", (req, res) => {
       res.status(401).json({ message: "Not authenticated" });
     }
   });
+
+app.get("/auth/logout", (req,res) => {
+    req.logout(err => {
+        if(err) return res.status(500).json({message:"Logout error"});
+        req.session.destroy(() => {
+            res.clearCookie("connect.sid");
+            res.redirect("http://localhost:3000/login");;
+        });
+    });
+});
   
-// ✅ 5. THEN routes
-app.use('/auth', authRoutes);       // ← moved here
+// 5. THEN routes
+app.use('/auth', authRoutes);     
 app.use('/api', reviewRoute);
 app.use('/api', historyRoute);
+app.use('/github',githubRoutes);
 
 app.listen(process.env.PORT, (error) => {
     if(!error)
