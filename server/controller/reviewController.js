@@ -27,7 +27,6 @@ const reviewPr = async (req,res) => {
             },
         });
         const raw = response.data.choices?.[0]?.message?.content || '[]';
-        // 🔧 Parse once more
         const suggestions = typeof raw === 'string' ? JSON.parse(raw) : raw; //ies to convert it to a JavaScript object (with JSON.parse)
         res.json({ suggestions });
 

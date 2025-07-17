@@ -4,7 +4,7 @@ import Highlight from "react-highlight";
 import "highlight.js/styles/atom-one-dark.css";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Reviewer = ({user, onLogout}) => {
+const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -20,7 +20,7 @@ const Reviewer = ({user, onLogout}) => {
   const [fetchedFiles, setFetchedFiles] = useState([]);
 
 
-  const MAX_LENGTH = 1000;
+  const MAX_LENGTH = 10000;
   const charCount = code.length;
 
   useEffect(() => {
@@ -209,7 +209,36 @@ const Reviewer = ({user, onLogout}) => {
               <h1 className="text-5xl font-bold text-indigo-300">AI PR Reviewer</h1>
               <p className="text-slate-400 mt-2">Your futuristic code companion</p>
             </div>
-
+            
+            <div className="bg-slate-800 p-4 rounded-xl shadow-md text-white mb-4">
+              <h2 className="text-lg font-semibold mb-2">Your Assigned PRs</h2>
+              <ul className="space-y-2 max-h-60 overflow-auto">
+              {Array.isArray(pullRequests) ? (
+                pullRequests.length === 0 ? (
+                  <li className="text-sm text-gray-400">No PRs assigned</li>
+                ) : (
+                  pullRequests.map((pr, index) => (
+                    <li
+                      key={index}
+                      className="border border-slate-600 p-2 rounded-md hover:bg-slate-700 cursor-pointer"
+                      onClick={() => {
+                        setRepo(`${pr.repoOwner}/${pr.repoName}`);
+                        setPrNumber(pr.number);
+                      }}
+                    >
+                      <div className="font-bold">{pr.title}</div>
+                      <div className="text-sm text-gray-400">
+                        {pr.repoOwner}/{pr.repoName} • #{pr.number}
+                      </div>
+                    </li>
+                  ))
+                )
+              ) : (
+                <li className="text-sm text-red-400">Invalid pull request data</li>
+              )}
+              </ul>
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="flex gap-2">
                 <input className="flex-1 h-10 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-400" placeholder="owner/repo" value={repo} onChange={(e) => setRepo(e.target.value)} />
@@ -231,7 +260,7 @@ const Reviewer = ({user, onLogout}) => {
                   </div>
                   <div className="overflow-auto max-h-64">
                     {fetchedFiles.map((file, i) => (
-                      <div key={i} className="mb-4">
+                      <div key={file.filename || i} className="mb-4">
                         <p className="text-xs font-semibold text-cyan-300 mb-1">{file.filename}</p>
                         <Highlight className="diff text-xs bg-black p-2 rounded">
                           {file.patch}

@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 const App = () => {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [pullRequests, setPullRequests] = useState([]);
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -25,6 +27,29 @@ const App = () => {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const fetchUserAndPRs = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/user", {
+          withCredentials: true,
+        });
+        setUser(res.data);
+  
+        const prRes = await axios.get("http://localhost:5001/github/prs-for-review", {
+          withCredentials: true,
+        });
+        setPullRequests(Array.isArray(prRes.data) ? prRes.data : []); // assume it's an array of PRs
+      } catch {
+        setUser(null);
+        setPullRequests([]);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+  
+    fetchUserAndPRs();
+  }, []);
+
   const handleLogout = () => {
     window.location.href = "http://localhost:5001/auth/logout";
   };
@@ -40,7 +65,10 @@ const App = () => {
           path="/"
           element={
             user ? (
-              <Reviewer user={user} onLogout={handleLogout} />
+              <Reviewer user={user}
+               pullRequests={pullRequests}
+               onLogout={handleLogout} 
+               />
             ) : (
               <Navigate to="/login" replace />
             )
