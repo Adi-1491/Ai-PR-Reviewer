@@ -11,7 +11,7 @@ router.get(
   "/github/callback",
   passport.authenticate("github", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect(process.env.CLIENT_URL || "http://localhost:3000");
+    res.redirect("https://ai-pr-reviewer-two.vercel.app");
   }
 );
 
@@ -22,7 +22,7 @@ router.get("/logout", (req, res) => {
 
     req.session.destroy(() => {
       res.clearCookie("connect.sid");
-      res.redirect(process.env.CLIENT_URL || "http://localhost:3000/login");
+      res.redirect("https://ai-pr-reviewer-two.vercel.app/login");
     });
   });
 });
