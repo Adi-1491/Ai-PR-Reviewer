@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Highlight from "react-highlight";
 import "highlight.js/styles/atom-one-dark.css";
@@ -14,14 +14,29 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showLanding, setShowLanding] = useState(true);
-  const [aiMessage, setAiMessage] = useState(""); 
+  const [aiMessage, setAiMessage] = useState("");
   const [repo, setRepo] = useState("");
   const [prNumber, setPrNumber] = useState("");
   const [fetchedFiles, setFetchedFiles] = useState([]);
 
-
   const MAX_LENGTH = 10000;
   const charCount = code.length;
+
+  // 🟢 Dynamic navbar height handling
+  const navbarRef = useRef(null);
+  const [navbarHeight, setNavbarHeight] = useState(120);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (navbarRef.current) {
+        setNavbarHeight(navbarRef.current.offsetHeight);
+      }
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowLanding(false), 1800);
@@ -87,7 +102,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
     }
 
     if (code.length > MAX_LENGTH) {
-      setError("Code too long. Please keep it under 1000 characters.");
+      setError("Code too long. Please keep it under 10000 characters.");
       setLoading(false);
       return;
     }
@@ -137,7 +152,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
 
   const saveReviewHistory = async (code, suggestions) => {
     try {
-      const res = await axios.post("http://localhost:5001/api/history", { code, suggestions },{withCredentials: true});
+      const res = await axios.post("http://localhost:5001/api/history", { code, suggestions }, { withCredentials: true });
       setHistory((prev) => [res.data, ...prev]);
     } catch (err) {
       console.error("Failed to save history:", err);
@@ -149,41 +164,56 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   );
 
   const handleFetchPR = async () => {
-    setError(""); 
-  
+    setError("");
     try {
       const res = await axios.post(
         "http://localhost:5001/github/fetch-pr",
         { repo, prNumber },
         { withCredentials: true }
       );
-  
-      setFetchedFiles(res.data.files); // 👈 New state we'll create
-      setCode(""); // Clear the old code box
+      setFetchedFiles(res.data.files);
+      setCode("");
       setSuggestions([]);
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to fetch PR.";
       setError(msg);
-  
-      setTimeout(() => {
-        setError("");
-      }, 4000);
+      setTimeout(() => setError(""), 4000);
     }
   };
-  
 
   return (
     <AnimatePresence>
-      <div className="fixed top-0 left-0 w-full px-4 py-3 bg-slate-950/80 backdrop-blur-lg flex justify-end items-center z-50 shadow-xl border-b border-slate-800">
-        <div className="flex items-center gap-3 text-white text-sm">
-          <img src={user?.avatar} alt="avatar" className="w-9 h-9 rounded-full shadow-md" />
-          <span className="hidden sm:inline">{user?.username}</span>
-          <button onClick={onLogout} className="ml-3 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs font-medium">
-            Logout
-          </button>
+      {/* ✅ Responsive Navbar with ref */}
+      <div
+        ref={navbarRef}
+        className="fixed top-0 left-0 w-full bg-slate-950/80 backdrop-blur-lg z-50 shadow-xl border-b border-slate-800"
+      >
+        <div className="px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+          <div className="w-20 sm:w-32" />
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <h1 className="text-lg sm:text-xl font-bold text-indigo-300 drop-shadow-md animate-pulse">
+              AI PR Reviewer
+            </h1>
+          </motion.div>
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-white text-sm">
+            <img src={user?.avatar} alt={`${user?.username}'s avatar`} className="w-9 h-9 rounded-full shadow-md" />
+            <span className="text-xs sm:text-sm">{user?.username}</span>
+            <button
+              onClick={onLogout}
+              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs font-medium"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* ✅ Landing Screen or Main Content */}
       {showLanding ? (
         <motion.div
           className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-black via-slate-900 to-slate-800 text-indigo-300"
@@ -197,68 +227,86 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
             animate={{ scale: 1.05 }}
             transition={{ repeat: Infinity, repeatType: "reverse", duration: 1.2 }}
           >
-            <h1 className="text-6xl font-extrabold tracking-wide drop-shadow-xl">AI PR Reviewer</h1>
-            <p className="text-xl mt-4 text-indigo-400">Initializing intelligence...</p>
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-wide drop-shadow-xl">AI PR Reviewer</h1>
+            <p className="text-lg sm:text-xl mt-4 text-indigo-400">Initializing intelligence...</p>
           </motion.div>
         </motion.div>
       ) : (
-        <div className="min-h-screen pt-20 pb-10 bg-gradient-to-b from-slate-900 to-black px-4 md:px-12 text-gray-100 font-mono">
+        <div
+          style={{ paddingTop: `${navbarHeight}px` }}
+          className="min-h-screen pb-10 bg-gradient-to-b from-slate-900 to-black px-4 sm:px-6 md:px-12 text-gray-100 font-mono"
+        >
           <motion.div
-            className="w-full max-w-6xl mx-auto bg-slate-800/60 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-8 md:p-10 space-y-8"
+            className="w-full max-w-6xl mx-auto bg-slate-800/60 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-4 sm:p-6 md:p-10 space-y-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="text-center">
-              <h1 className="text-5xl font-bold text-indigo-300">AI PR Reviewer</h1>
-              <p className="text-slate-400 mt-2">Your futuristic code companion</p>
-            </div>
-            
+            {/* Assigned PRs */}
             <div className="bg-slate-800 p-4 rounded-xl shadow-md text-white mb-4">
               <h2 className="text-lg font-semibold mb-2">Your Assigned PRs</h2>
               <ul className="space-y-2 max-h-60 overflow-auto">
-              {Array.isArray(pullRequests) ? (
-                pullRequests.length === 0 ? (
-                  <li className="text-sm text-gray-400">No PRs assigned</li>
+                {Array.isArray(pullRequests) ? (
+                  pullRequests.length === 0 ? (
+                    <li className="text-sm text-gray-400">No PRs assigned</li>
+                  ) : (
+                    pullRequests.map((pr, index) => (
+                      <li
+                        key={index}
+                        className="border border-slate-600 p-2 rounded-md hover:bg-slate-700 cursor-pointer"
+                        onClick={() => {
+                          setRepo(`${pr.repoOwner}/${pr.repoName}`);
+                          setPrNumber(pr.number);
+                        }}
+                      >
+                        <div className="font-bold">{pr.title}</div>
+                        <div className="text-sm text-gray-400">
+                          {pr.repoOwner}/{pr.repoName} • #{pr.number}
+                        </div>
+                      </li>
+                    ))
+                  )
                 ) : (
-                  pullRequests.map((pr, index) => (
-                    <li
-                      key={index}
-                      className="border border-slate-600 p-2 rounded-md hover:bg-slate-700 cursor-pointer"
-                      onClick={() => {
-                        setRepo(`${pr.repoOwner}/${pr.repoName}`);
-                        setPrNumber(pr.number);
-                      }}
-                    >
-                      <div className="font-bold">{pr.title}</div>
-                      <div className="text-sm text-gray-400">
-                        {pr.repoOwner}/{pr.repoName} • #{pr.number}
-                      </div>
-                    </li>
-                  ))
-                )
-              ) : (
-                <li className="text-sm text-red-400">Invalid pull request data</li>
-              )}
+                  <li className="text-sm text-red-400">Invalid pull request data</li>
+                )}
               </ul>
             </div>
-            
+  
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex gap-2">
-                <input className="flex-1 h-10 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-400" placeholder="owner/repo" value={repo} onChange={(e) => setRepo(e.target.value)} />
-                <input className="w-24 h-10 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-400" placeholder="PR #" value={prNumber} onChange={(e) => setPrNumber(e.target.value)} />
-                <button type="button" onClick={handleFetchPR} className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  className="w-full sm:flex-1 h-10 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-400"
+                  placeholder="owner/repo"
+                  value={repo}
+                  onChange={(e) => setRepo(e.target.value)}
+                />
+                <input
+                  className="w-full sm:w-24 h-10 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-gray-400"
+                  placeholder="PR #"
+                  value={prNumber}
+                  onChange={(e) => setPrNumber(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchPR}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded"
+                >
                   Fetch PR
                 </button>
               </div>
-
+  
+              {/* Fetched Files */}
               {fetchedFiles.length > 0 && (
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-700">
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
                     <h2 className="text-indigo-300 font-semibold text-sm">
                       Fetched PR Files ({fetchedFiles.length})
                     </h2>
-                    <button onClick={() => setFetchedFiles([])} className="text-red-400 hover:text-red-300 text-xs underline">
+                    <button
+                      onClick={() => setFetchedFiles([])}
+                      className="text-red-400 hover:text-red-300 text-xs underline"
+                    >
                       Clear
                     </button>
                   </div>
@@ -266,7 +314,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                     {fetchedFiles.map((file, i) => (
                       <div key={file.filename || i} className="mb-4">
                         <p className="text-xs font-semibold text-cyan-300 mb-1">{file.filename}</p>
-                        <Highlight className="diff text-xs bg-black p-2 rounded">
+                        <Highlight className="diff text-xs bg-black p-2 rounded overflow-x-auto block">
                           {file.patch}
                         </Highlight>
                         <button
@@ -280,10 +328,11 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                   </div>
                 </div>
               )}
-
+  
+              {/* Code Input */}
               <textarea
                 rows={10}
-                className={`w-full p-4 text-sm rounded-xl font-mono bg-slate-700 text-gray-100 border ${
+                className={`w-full min-w-0 p-4 text-sm rounded-xl font-mono bg-slate-700 text-gray-100 border ${
                   charCount > MAX_LENGTH ? "border-red-400" : "border-indigo-400"
                 } focus:outline-none focus:ring-2 focus:ring-indigo-300`}
                 placeholder="Paste your code here..."
@@ -296,8 +345,9 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
               <div className="text-right text-xs text-indigo-300">
                 {charCount}/{MAX_LENGTH}
               </div>
-
-              <div className="flex gap-4">
+  
+              {/* Submit Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   type="submit"
                   disabled={loading}
@@ -316,16 +366,19 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                 </button>
               </div>
             </form>
-
+  
+            {/* AI Message */}
             {loading && (
               <div className="text-center mt-4">
                 <div className="text-4xl animate-bounce mb-2">🤖</div>
                 <p className="text-sm text-indigo-300 animate-pulse">{aiMessage}</p>
               </div>
             )}
-
+  
+            {/* Error */}
             {error && <div className="bg-red-200 text-red-800 p-2 rounded text-sm mt-2">{error}</div>}
-
+  
+            {/* Suggestions */}
             {suggestions.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold text-indigo-300">AI Suggestions</h2>
@@ -335,7 +388,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                       <p className="text-sm text-indigo-300 mb-2">{s.comment}</p>
                       {s.code && (
                         <>
-                          <Highlight className="javascript text-sm text-gray-100 bg-black p-2 rounded">
+                          <Highlight className="javascript text-sm text-gray-100 bg-black p-2 rounded overflow-x-auto block">
                             {s.code}
                           </Highlight>
                           <button
@@ -351,11 +404,12 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                 </ul>
               </div>
             )}
-
+  
+            {/* History Section */}
             <hr className="my-6 border-slate-700" />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h3 className="text-lg font-semibold text-slate-300">Review History</h3>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button onClick={() => setShowHistory(!showHistory)} className="text-sm text-indigo-400 hover:underline">
                   {showHistory ? "Hide History" : "View History"}
                 </button>
@@ -370,7 +424,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                 </button>
               </div>
             </div>
-
+  
             {showHistory && (
               <div className="space-y-4">
                 <input
@@ -397,7 +451,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                             <li key={j}>{s.comment}</li>
                           ))}
                         </ul>
-                        <div className="flex gap-4 mt-2 text-xs">
+                        <div className="flex flex-col sm:flex-row gap-4 mt-2 text-xs">
                           <button
                             onClick={() => {
                               setCode(item.code);
@@ -414,7 +468,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                           <button
                             onClick={async () => {
                               await axios.delete(`http://localhost:5001/api/history/${item._id}`);
-                              setHistory((prev) => prev.filter((_, idx) => idx !== i));
+                              setHistory((prev) => prev.filter(h => h._id !== item._id));
                             }}
                             className="text-red-400 hover:underline"
                           >
@@ -431,7 +485,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
         </div>
       )}
     </AnimatePresence>
-  );
+  );  
 };
 
 export default Reviewer;
