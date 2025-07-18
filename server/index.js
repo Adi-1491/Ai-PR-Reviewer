@@ -21,6 +21,8 @@ app.use(cors({
 //  2. JSON body parser
 app.use(express.json());
 
+app.set("trust proxy", 1); // TRUST RENDER'S PROXY
+
 //  3. Session middleware
 app.use(
   session({
