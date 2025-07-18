@@ -14,7 +14,7 @@ const githubRoutes = require("./routes/github")
 
 //  1. CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  origin: process.env.CLIENT_URL,
   credentials: true,
 }));
 
@@ -28,8 +28,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: true,               // Required for HTTPS
       httpOnly: true,
+      sameSite: "none",           // Important for cross-origin cookies (Render -> Vercel)
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
