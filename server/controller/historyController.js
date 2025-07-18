@@ -3,7 +3,14 @@ const History = require('../models/History');
  exports.createHistory = async(req,res) => {
     try {
         const {code, suggestions} = req.body;
+
+        if (!req.user || !req.user.username) 
+        {
+            return res.status(401).json({ error: "Unauthorized: No user info found" });
+        }
+      
         const newHistory = new History({
+            user: req.user.username,
             code,
             suggestions,
             timestamp: new Date()
@@ -20,7 +27,11 @@ const History = require('../models/History');
 //fetch all reviews
 exports.getHistory = async(req,res) => {
     try{
-        const all = await History.find().sort({ timestamp: -1 });
+        if (!req.user || !req.user.username) 
+        {
+            return res.status(401).json({ error: "Unauthorized: No user info found" });
+        }
+        const all = await History.find({ user: req.user.username }).sort({ timestamp: -1 });
         res.json(all);
       } catch (err) {
         console.error(err);
@@ -46,8 +57,14 @@ exports.deleteHistory =  async(req,res) => {
 
 exports.deleteAllHistory = async(req,res) => {
     try{
-        await History.deleteMany({});
+        if (!req.user || !req.user.username) 
+        {
+            return res.status(401).json({ error: "Unauthorized: No user info found" });
+        }
+
+        await History.deleteMany({user: req.user.username });
         return res.json({ message: "All history entries deleted successfully" });
+        
   } catch (error) {
     console.error("Error deleting all history:", error);
     return res.status(500).json({ error: "Failed to delete all history" });

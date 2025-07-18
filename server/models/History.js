@@ -6,9 +6,16 @@ const suggestionsSchema = new mongoose.Schema({
 }, {_id: false});
 
 const historySchema =  new mongoose.Schema({
+    user: {
+        type: String,
+        required: true
+    },
     code:String,
     suggestions: [suggestionsSchema],
-    timestamp: Date
+    timestamp: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = mongoose.model('History', historySchema);

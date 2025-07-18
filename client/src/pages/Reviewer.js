@@ -38,7 +38,9 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/history");
+        const res = await axios.get("http://localhost:5001/api/history", {
+          withCredentials: true,
+        });
         setHistory(res.data);
       } catch (err) {
         console.error("Failed to fetch history:", err);
@@ -123,7 +125,9 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   const handleClearHistory = async () => {
     if (!window.confirm("Are you sure you want to delete all history?")) return;
     try {
-      await axios.delete("http://localhost:5001/api/history");
+      await axios.delete("http://localhost:5001/api/history", {
+        withCredentials: true,
+      });
       setHistory([]);
       setSearchTerm("");
     } catch (err) {
@@ -133,7 +137,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
 
   const saveReviewHistory = async (code, suggestions) => {
     try {
-      const res = await axios.post("http://localhost:5001/api/history", { code, suggestions });
+      const res = await axios.post("http://localhost:5001/api/history", { code, suggestions },{withCredentials: true});
       setHistory((prev) => [res.data, ...prev]);
     } catch (err) {
       console.error("Failed to save history:", err);
