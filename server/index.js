@@ -73,7 +73,7 @@ app.listen(process.env.PORT, (error) => {
     }
 });
 
-mongoose.connect('mongodb://127.0.0.1:27017/history',{
+mongoose.connect(process.env.MONGODB_URI,{
 
 })
 .then(() => {
