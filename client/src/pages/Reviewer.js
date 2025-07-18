@@ -4,6 +4,8 @@ import Highlight from "react-highlight";
 import "highlight.js/styles/atom-one-dark.css";
 import { motion, AnimatePresence } from "framer-motion";
 
+const API = process.env.REACT_APP_API_URL;
+
 const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/history", {
+        const res = await axios.get(`${API}/api/history`, {
           withCredentials: true,
         });
         setHistory(res.data);
@@ -108,7 +110,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5001/api/review", { code });
+      const res = await axios.post(`${API}/api/review`, { code });
       setSuggestions(res.data.suggestions);
       localStorage.setItem("aiSuggestions", JSON.stringify(res.data.suggestions));
       saveReviewHistory(code, res.data.suggestions);
@@ -140,7 +142,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   const handleClearHistory = async () => {
     if (!window.confirm("Are you sure you want to delete all history?")) return;
     try {
-      await axios.delete("http://localhost:5001/api/history", {
+      await axios.delete(`${API}/api/history`, {
         withCredentials: true,
       });
       setHistory([]);
@@ -152,7 +154,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
 
   const saveReviewHistory = async (code, suggestions) => {
     try {
-      const res = await axios.post("http://localhost:5001/api/history", { code, suggestions }, { withCredentials: true });
+      const res = await axios.post(`${API}/api/history`, { code, suggestions }, { withCredentials: true });
       setHistory((prev) => [res.data, ...prev]);
     } catch (err) {
       console.error("Failed to save history:", err);
@@ -167,7 +169,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
     setError("");
     try {
       const res = await axios.post(
-        "http://localhost:5001/github/fetch-pr",
+        `${API}/github/fetch-pr`,
         { repo, prNumber },
         { withCredentials: true }
       );
@@ -467,7 +469,7 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                           </button>
                           <button
                             onClick={async () => {
-                              await axios.delete(`http://localhost:5001/api/history/${item._id}`);
+                              await axios.delete(`${API}/api/history/${item._id}`);
                               setHistory((prev) => prev.filter(h => h._id !== item._id));
                             }}
                             className="text-red-400 hover:underline"

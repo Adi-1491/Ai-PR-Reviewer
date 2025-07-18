@@ -4,16 +4,17 @@ import axios from "axios";
 import Reviewer from "./pages/Reviewer";
 import Login from "./pages/Login";
 
+const API = process.env.REACT_APP_API_URL;
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [pullRequests, setPullRequests] = useState([]);
 
-
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/user", {
+        const res = await axios.get(`${API}/user`, {
           withCredentials: true,
         });
         setUser(res.data);
@@ -30,15 +31,15 @@ const App = () => {
   useEffect(() => {
     const fetchUserAndPRs = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/user", {
+        const res = await axios.get(`${API}/user`, {
           withCredentials: true,
         });
         setUser(res.data);
-  
-        const prRes = await axios.get("http://localhost:5001/github/prs-for-review", {
+
+        const prRes = await axios.get(`${API}/github/prs-for-review`, {
           withCredentials: true,
         });
-        setPullRequests(Array.isArray(prRes.data) ? prRes.data : []); // assume it's an array of PRs
+        setPullRequests(Array.isArray(prRes.data) ? prRes.data : []);
       } catch {
         setUser(null);
         setPullRequests([]);
@@ -46,12 +47,12 @@ const App = () => {
         setAuthChecked(true);
       }
     };
-  
+
     fetchUserAndPRs();
   }, []);
 
   const handleLogout = () => {
-    window.location.href = "http://localhost:5001/auth/logout";
+    window.location.href = `${API}/auth/logout`;
   };
 
   if (!authChecked) {
@@ -65,10 +66,11 @@ const App = () => {
           path="/"
           element={
             user ? (
-              <Reviewer user={user}
-               pullRequests={pullRequests}
-               onLogout={handleLogout} 
-               />
+              <Reviewer
+                user={user}
+                pullRequests={pullRequests}
+                onLogout={handleLogout}
+              />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -76,9 +78,7 @@ const App = () => {
         />
         <Route
           path="/login"
-          element={
-            user ? <Navigate to="/" replace /> : <Login />
-          }
+          element={user ? <Navigate to="/" replace /> : <Login />}
         />
       </Routes>
     </Router>

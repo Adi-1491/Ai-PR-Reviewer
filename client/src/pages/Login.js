@@ -1,9 +1,11 @@
 import React from "react";
 import { motion } from "framer-motion";
 
+const API = process.env.REACT_APP_API_URL;
+
 const Login = () => {
   const handleLogin = () => {
-    window.location.href = "http://localhost:5001/auth/github";
+    window.location.href = `${API}/auth/github`;
   };
 
   return (

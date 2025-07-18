@@ -14,7 +14,7 @@ const githubRoutes = require("./routes/github")
 
 //  1. CORS
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: process.env.CLIENT_URL || "http://localhost:3000",
   credentials: true,
 }));
 
@@ -47,12 +47,12 @@ app.get("/user", (req, res) => {
     }
   });
 
-app.get("/auth/logout", (req,res) => {
+  app.get("/auth/logout", (req,res) => {
     req.logout(err => {
         if(err) return res.status(500).json({message:"Logout error"});
         req.session.destroy(() => {
             res.clearCookie("connect.sid");
-            res.redirect("http://localhost:3000/login");;
+            res.redirect(`${process.env.CLIENT_URL}/login`);
         });
     });
 });
