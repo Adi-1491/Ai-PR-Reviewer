@@ -9,7 +9,7 @@ const reviewPr = async (req,res) => {
         }
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions',
             {
-              model: 'deepseek/deepseek-r1-0528-qwen3-8b:free',
+              model: 'openai/chatgpt-4o-latest',
               messages: [
                 {
                   role: 'user',
