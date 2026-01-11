@@ -17,7 +17,8 @@ router.get(
   passport.authenticate("github", { failureRedirect: "/" }),
   (req, res) => {
     console.log('✅ Login successful:', req.user?.username);
-    res.redirect("http://localhost:3000");
+    // res.redirect("http://localhost:3000");
+    res.redirect("https://ai-pr-reviewer-two.vercel.app/");
   }
 );
 
@@ -27,7 +28,8 @@ router.get("/logout", (req, res) => {
     if (err) return res.status(500).json({ message: "Logout error" });
     req.session.destroy(() => {
       res.clearCookie("connect.sid");
-      res.redirect("http://localhost:3000/login");
+      // res.redirect("http://localhost:3000/login");
+      res.redirect("https://ai-pr-reviewer-two.vercel.app/");
     });
   });
 });
