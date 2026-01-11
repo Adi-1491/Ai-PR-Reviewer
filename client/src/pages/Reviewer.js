@@ -46,10 +46,22 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
   }, []);
 
   useEffect(() => {
-    const savedSuggestions = localStorage.getItem("aiSuggestions");
-    const savedInput = localStorage.getItem("aiInputcode");
-    if (savedSuggestions) setSuggestions(JSON.parse(savedSuggestions));
-    if (savedInput) setCode(savedInput);
+    try {
+      const savedSuggestions = localStorage.getItem("aiSuggestions");
+      const savedInput = localStorage.getItem("aiInputcode");
+      
+      if (savedSuggestions && savedSuggestions !== "undefined") {
+        setSuggestions(JSON.parse(savedSuggestions));
+      }
+      if (savedInput && savedInput !== "undefined") {
+        setCode(savedInput);
+      }
+    } catch (error) {
+      console.error("Failed to load saved data:", error);
+      // Clear corrupted data
+      localStorage.removeItem("aiSuggestions");
+      localStorage.removeItem("aiInputcode");
+    }
   }, []);
 
   useEffect(() => {
@@ -78,7 +90,8 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
       "Thinking through your logic like Sherlock Holmes...",
       "Brains warming up, optimizing structure...",
       "Boosting your code’s IQ by 9000...",
-      "Finding the missing semicolon..."
+      "Finding the missing semicolon...",
+      "Thinking Deeply"
     ];
     let index = 0;
     setAiMessage(facts[index]);
@@ -111,9 +124,13 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
 
     try {
       const res = await axios.post(`${API}/api/review`, { code });
-      setSuggestions(res.data.suggestions);
-      localStorage.setItem("aiSuggestions", JSON.stringify(res.data.suggestions));
-      saveReviewHistory(code, res.data.suggestions);
+      if (res.data?.suggestions) { 
+        setSuggestions(res.data.suggestions);
+        localStorage.setItem("aiSuggestions", JSON.stringify(res.data.suggestions));
+        saveReviewHistory(code, res.data.suggestions);
+      } else {
+        setError("No suggestions received from server.");
+      }
     } catch (err) {
       setError("Failed to connect to server.");
     } finally {
@@ -455,14 +472,16 @@ const Reviewer = ({ user, pullRequests = [], onLogout }) => {
                         </ul>
                         <div className="flex flex-col sm:flex-row gap-4 mt-2 text-xs">
                           <button
-                            onClick={() => {
+                           onClick={() => {
+                            if (item.code && item.suggestions) { 
                               setCode(item.code);
                               setSuggestions(item.suggestions);
                               setShowHistory(false);
                               localStorage.setItem("aiInputcode", item.code);
                               localStorage.setItem("aiSuggestions", JSON.stringify(item.suggestions));
                               window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
+                            }
+                          }}
                             className="text-cyan-300 hover:underline"
                           >
                             Reopen Review
